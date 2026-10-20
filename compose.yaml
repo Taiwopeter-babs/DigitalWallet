@@ -1,0 +1,13 @@
+﻿services:
+  digitalwallet:
+    image: digitalwallet
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+  digitalwallethistory:
+    image: digitalwallethistory
+    build:
+      context: .
+      dockerfile: DigitalWalletHistory/Dockerfile
+
