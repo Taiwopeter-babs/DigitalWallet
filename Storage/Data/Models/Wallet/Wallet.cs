@@ -3,8 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Numerics;
 using System.Text.Json.Serialization;
 
-
-namespace DigitalWallet.Models;
+namespace DigitalWallet.Data;
 
 [Table("wallets")]
 public class Wallet : BaseModel
@@ -12,8 +11,13 @@ public class Wallet : BaseModel
     [Required]
     public string UserId { get; init; }
 
+    [Required]
     public decimal Balance { get; set; }
 
     [JsonIgnore]
-    public BigInteger Version { get; set; }
+    public uint Version { get; set; }
+
+    [JsonIgnore]
+    public ICollection<WalletTransaction> Transactions { get; set; } =
+        new List<WalletTransaction>();
 }

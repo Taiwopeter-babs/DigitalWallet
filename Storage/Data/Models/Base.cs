@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.Extensions.Configuration;
 
-namespace DigitalWallet.Models;
+namespace DigitalWallet.Data;
 
 public abstract class BaseModel
 {

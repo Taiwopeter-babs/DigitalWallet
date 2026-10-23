@@ -1,4 +1,40 @@
-﻿services:
+﻿version: "3.9"
+
+services:
+  postgres:
+    image: postgres:17
+    container_name: digital-wallet-db
+    environment:
+      POSTGRES_USER: digitalwalletuser
+      POSTGRES_PASSWORD: digitalpassword
+      POSTGRES_DB: digitalwalletdb
+    expose:
+      - 5432
+    ports:
+      - "${DATABASE_PORT:-5432}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    env_file:
+      - .env
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U digitalwalletuser -d digitalwalletdb" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - default
+  
+  
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 8080:8080
+    environment:
+      ADMINER_DEFAULT_SERVER: digital-wallet-db
+    networks:
+      - default
+  
   digitalwallet:
     image: digitalwallet
     build:
@@ -10,4 +46,16 @@
     build:
       context: .
       dockerfile: DigitalWalletHistory/Dockerfile
+
+  events:
+    image: events
+    build:
+      context: .
+      dockerfile: Events/Dockerfile
+
+  history:
+    image: history
+    build:
+      context: .
+      dockerfile: History/Dockerfile
 
