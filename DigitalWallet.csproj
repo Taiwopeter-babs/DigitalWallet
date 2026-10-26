@@ -8,56 +8,24 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <PackageReference Include="Confluent.Kafka" Version="2.16.0"/>
         <PackageReference Include="FluentValidation" Version="12.2.0"/>
+        <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.2.0"/>
         <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.13"/>
         <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.13"/>
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="10.0.13">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
         <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3"/>
     </ItemGroup>
 
     <ItemGroup>
-        <Compile Update="DigitalWalletHistory\Program.cs">
-            <Link>WebApplication1\Program.cs</Link>
-        </Compile>
-        <Compile Update="DigitalWalletHistory\WeatherForecast.cs">
-            <Link>WebApplication1\WeatherForecast.cs</Link>
-        </Compile>
-    </ItemGroup>
-
-    <ItemGroup>
-        <Content Update="DigitalWalletHistory\Properties\launchSettings.json">
-            <Link>WebApplication1\Properties\launchSettings.json</Link>
-        </Content>
-        <Content Update="DigitalWalletHistory\appsettings.json">
-            <Link>WebApplication1\appsettings.json</Link>
-        </Content>
-        <Content Update="DigitalWalletHistory\appsettings.Development.json">
-            <Link>WebApplication1\appsettings.Development.json</Link>
-        </Content>
-    </ItemGroup>
-
-    <ItemGroup>
-        <None Update="DigitalWalletHistory\WebApplication1.http">
-            <Link>WebApplication1\WebApplication1.http</Link>
-        </None>
-        <None Update="DigitalWalletHistory\Dockerfile">
-            <Link>WebApplication1\Dockerfile</Link>
-        </None>
-    </ItemGroup>
-
-    <ItemGroup>
-        <_ContentIncludedByDefault Remove="Events\appsettings.Development.json"/>
-        <_ContentIncludedByDefault Remove="Events\appsettings.json"/>
-        <_ContentIncludedByDefault Remove="Events\obj\Events.csproj.nuget.dgspec.json"/>
-        <_ContentIncludedByDefault Remove="Events\obj\project.assets.json"/>
-        <_ContentIncludedByDefault Remove="Events\obj\project.packagespec.json"/>
-        <_ContentIncludedByDefault Remove="Events\Properties\launchSettings.json"/>
-        <_ContentIncludedByDefault Remove="ClassLibrary1Test\obj\ClassLibrary1Test.csproj.nuget.dgspec.json"/>
-        <_ContentIncludedByDefault Remove="ClassLibrary1Test\obj\project.assets.json"/>
-        <_ContentIncludedByDefault Remove="ClassLibrary1Test\obj\project.packagespec.json"/>
-    </ItemGroup>
-
-    <ItemGroup>
-        <ProjectReference Include="Storage\Storage.csproj"/>
+        <_ContentIncludedByDefault Remove="Storage\bin\Debug\net10.0\Storage.deps.json"/>
+        <_ContentIncludedByDefault Remove="Storage\obj\Debug\net10.0\Storage.sourcelink.json"/>
+        <_ContentIncludedByDefault Remove="Storage\obj\project.assets.json"/>
+        <_ContentIncludedByDefault Remove="Storage\obj\project.packagespec.json"/>
+        <_ContentIncludedByDefault Remove="Storage\obj\Storage.csproj.nuget.dgspec.json"/>
     </ItemGroup>
 
 </Project>

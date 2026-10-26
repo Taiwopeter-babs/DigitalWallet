@@ -1,5 +1,8 @@
 bin/
 obj/
 /packages/
+Frontend/node_modules/
+Frontend/.next/
+Frontend/dist/
 riderModule.iml
 /_ReSharper.Caches/
