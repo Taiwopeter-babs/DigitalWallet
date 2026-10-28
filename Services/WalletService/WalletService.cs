@@ -44,6 +44,8 @@ public class WalletService : IWalletService
 
             await repo.SaveAsync(token);
 
+            var correlationId = Guid.NewGuid();
+
             var outboxMessage = new OutboxMessage
             {
                 Key = _options.WalletProducerKafkaKey,
@@ -53,7 +55,8 @@ public class WalletService : IWalletService
                     UserId = newWallet.UserId,
                     WalletId = newWallet.Id,
                     EventType = EventType.WalletCreated,
-                    Timestamp = DateTimeOffset.UtcNow
+                    Timestamp = DateTimeOffset.UtcNow,
+                    CorrelationId = correlationId
                 }
             };
 
@@ -80,12 +83,15 @@ public class WalletService : IWalletService
             // Fund wallet
             await repo.Wallet.FundWallet(walletId, amount, cancellationToken);
 
+            var correlationId = Guid.NewGuid();
+
             var walletTransaction = new WalletTransaction
             {
                 WalletId = walletId,
                 Amount = amount,
                 Status = TransactionStatus.Completed,
-                Type = TransactionType.Fund
+                Type = TransactionType.Fund,
+                CorrelationId = correlationId
             };
 
             repo.WalletTransaction.CreateWalletTransaction(walletTransaction,
@@ -105,7 +111,9 @@ public class WalletService : IWalletService
                     Amount = amount,
                     WalletId = wallet.Id,
                     EventType = EventType.WalletFunded,
-                    Timestamp = DateTimeOffset.UtcNow
+                    Timestamp = DateTimeOffset.UtcNow,
+                    CorrelationId = correlationId
+
                 }
             };
 
@@ -135,14 +143,19 @@ public class WalletService : IWalletService
 
             if (receiverWallet is null) throw new NotFoundException("Receiver Wallet Not Found");
 
+            var correlationId = Guid.NewGuid();
+
+
             if (!IsSufficientBalance(senderWallet.Balance, amount))
             {
+
                 var failedWalletTransaction = new WalletTransaction
                 {
                     WalletId = senderWalletId,
                     Amount = amount,
                     Status = TransactionStatus.Failed,
-                    Type = TransactionType.TransferOut
+                    Type = TransactionType.TransferOut,
+                    CorrelationId = correlationId
                 };
 
                 repo.WalletTransaction.CreateWalletTransaction(failedWalletTransaction,
@@ -161,7 +174,8 @@ public class WalletService : IWalletService
                         WalletId = senderWallet.Id,
                         Amount = amount,
                         EventType = EventType.TransferFailed,
-                        Timestamp = DateTimeOffset.UtcNow
+                        Timestamp = DateTimeOffset.UtcNow,
+                        CorrelationId = correlationId
 
                     }
                 };
@@ -181,7 +195,8 @@ public class WalletService : IWalletService
                 WalletId = senderWalletId,
                 Amount = amount,
                 Status = TransactionStatus.Completed,
-                Type = TransactionType.TransferOut
+                Type = TransactionType.TransferOut,
+                CorrelationId = correlationId
             };
 
 
@@ -212,8 +227,8 @@ public class WalletService : IWalletService
                     WalletId = senderWallet.Id,
                     Amount = amount,
                     EventType = EventType.TransferCompleted,
-                    Timestamp = DateTimeOffset.UtcNow
-
+                    Timestamp = DateTimeOffset.UtcNow,
+                    CorrelationId = correlationId
                 }
             };
 
@@ -228,7 +243,9 @@ public class WalletService : IWalletService
                     WalletId = receiverWallet.Id,
                     Amount = amount,
                     EventType = EventType.TransferCompleted,
-                    Timestamp = DateTimeOffset.UtcNow
+                    Timestamp = DateTimeOffset.UtcNow,
+                    CorrelationId = correlationId
+
                 }
             };
 

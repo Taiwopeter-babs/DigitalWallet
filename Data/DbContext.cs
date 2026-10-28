@@ -11,6 +11,9 @@ public class DatabaseContext : DbContext
     public DbSet<TransactionEvent> TransactionEvents { get; set; }
     public DbSet<OutboxMessage> OutboxMessages { get; set; }
 
+    public DbSet<InboxMessage> InboxMessages { get; set; }
+
+
     public DatabaseContext(DbContextOptions<DatabaseContext> options)
         : base(options)
     {
@@ -62,7 +65,31 @@ public class DatabaseContext : DbContext
             .HasConversion<string>();
 
 
+        // Transaction events
+        modelBuilder.Entity<TransactionEvent>()
+            .Property(te => te.EventType)
+            .HasConversion<string>();
+
+        modelBuilder.Entity<TransactionEvent>()
+            .ComplexProperty(
+                te => te.EventData,
+                builder =>
+                {
+                    builder.Property(ed => ed.EventType).HasConversion<string>();
+                }
+            );
+
+        // Inbox
+        modelBuilder.Entity<InboxMessage>()
+           .HasIndex(u => u.CorrelationId);
+
         // Outbox
+        modelBuilder.Entity<OutboxMessage>()
+            .HasOne(om => om.InboxMessage)
+            .WithOne(im => im.OutboxMessage)
+            .HasForeignKey<InboxMessage>(im => im.OutboxId)
+            .IsRequired();
+
         modelBuilder.Entity<OutboxMessage>()
             .HasIndex(om => om.Key);
 

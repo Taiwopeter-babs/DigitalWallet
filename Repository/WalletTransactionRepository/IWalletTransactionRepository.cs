@@ -16,4 +16,6 @@ public interface IWalletTransactionRepository
     Task<List<WalletTransaction>> GetWalletTransactions(
         int walletId,
         CancellationToken token);
+
+    Task<List<WalletTransaction>> GetUserWalletTransactions(Guid userId, CancellationToken token);
 }

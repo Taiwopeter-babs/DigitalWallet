@@ -10,6 +10,7 @@ using DigitalWallet.Services.KafkaService;
 using DigitalWallet.Services.KafkaService.KafkaProducerService;
 using DigitalWallet.Storage;
 using FluentValidation;
+using DigitalWallet.Services.KafkaService.WalletWorkerService;
 
 namespace DigitalWallet.Extensions;
 
@@ -50,6 +51,8 @@ public static class WalletServiceExtensions
             services.AddScoped<IHistoryRepository, HistoryRepository>();
             services.AddScoped<IWalletRepository, WalletRepository>();
             services.AddScoped<IOutboxMessageRepository, OutboxMessageRepository>();
+            services.AddScoped<IInboxMessageRepository, InboxMessageRepository>();
+
         }
 
         public void ConfigureServices()
@@ -57,6 +60,7 @@ public static class WalletServiceExtensions
             services.AddScoped<IWalletService, WalletService>();
             services.AddScoped<IHistoryService, HistoryService>();
             services.AddSingleton<IKafkaProducerService, KafkaProducerService>();
+            services.AddScoped<IWalletWorkerService, WalletWorkerService>();
         }
 
 

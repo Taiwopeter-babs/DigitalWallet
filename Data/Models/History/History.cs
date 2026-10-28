@@ -15,13 +15,12 @@ public class TransactionEvent : BaseModel
     [Required]
     public required string UserId { get; set; }
 
-    [Required]
-    public decimal Amount { get; set; }
+    public decimal? Amount { get; set; }
 
     [Required]
     public EventType EventType { get; set; }
 
-    public int TransactionId { get; set; }
+    public int? TransactionId { get; set; }
 
     [Required]
     public required TransactionEventData EventData { get; set; }
@@ -37,6 +36,10 @@ public class TransactionEventData
     public required string UserId { get; set; }
 
     public decimal? Amount { get; set; }
+
+    public Guid? CorrelationId { get; set; }
+
+    [JsonConverter(typeof(JsonStringEnumConverter))]
     public required EventType EventType { get; set; }
 
     [JsonConverter(typeof(IsoDateTimeConverter))]

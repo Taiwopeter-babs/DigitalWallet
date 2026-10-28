@@ -23,6 +23,50 @@ namespace DigitalWallet.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("DigitalWallet.Data.InboxMessage", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<Guid?>("CorrelationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("OutboxId")
+                        .HasColumnType("integer");
+
+                    b.Property<bool?>("Received")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTimeOffset?>("ReceivedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Topic")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CorrelationId");
+
+                    b.HasIndex("OutboxId")
+                        .IsUnique();
+
+                    b.ToTable("inbox_messages");
+                });
+
             modelBuilder.Entity("DigitalWallet.Data.OutboxMessage", b =>
                 {
                     b.Property<int>("Id")
@@ -65,6 +109,9 @@ namespace DigitalWallet.Migrations
                             b1.Property<decimal?>("Amount")
                                 .HasColumnType("numeric");
 
+                            b1.Property<Guid?>("CorrelationId")
+                                .HasColumnType("uuid");
+
                             b1.Property<string>("EventType")
                                 .IsRequired()
                                 .HasColumnType("text");
@@ -92,7 +139,7 @@ namespace DigitalWallet.Migrations
 
                     b.HasIndex("Topic");
 
-                    b.ToTable("outbox");
+                    b.ToTable("outbox_messages");
                 });
 
             modelBuilder.Entity("DigitalWallet.Data.TransactionEvent", b =>
@@ -103,16 +150,17 @@ namespace DigitalWallet.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<decimal>("Amount")
+                    b.Property<decimal?>("Amount")
                         .HasColumnType("numeric");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int>("EventType")
-                        .HasColumnType("integer");
+                    b.Property<string>("EventType")
+                        .IsRequired()
+                        .HasColumnType("text");
 
-                    b.Property<int>("TransactionId")
+                    b.Property<int?>("TransactionId")
                         .HasColumnType("integer");
 
                     b.Property<DateTimeOffset>("UpdatedAt")
@@ -132,8 +180,12 @@ namespace DigitalWallet.Migrations
                             b1.Property<decimal?>("Amount")
                                 .HasColumnType("numeric");
 
-                            b1.Property<int>("EventType")
-                                .HasColumnType("integer");
+                            b1.Property<Guid?>("CorrelationId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<string>("EventType")
+                                .IsRequired()
+                                .HasColumnType("text");
 
                             b1.Property<DateTimeOffset>("Timestamp")
                                 .HasColumnType("timestamp with time zone");
@@ -208,6 +260,9 @@ namespace DigitalWallet.Migrations
                         .HasColumnType("numeric(19,4)")
                         .HasDefaultValue(0m);
 
+                    b.Property<Guid?>("CorrelationId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -232,6 +287,17 @@ namespace DigitalWallet.Migrations
                     b.ToTable("wallet_transactions");
                 });
 
+            modelBuilder.Entity("DigitalWallet.Data.InboxMessage", b =>
+                {
+                    b.HasOne("DigitalWallet.Data.OutboxMessage", "OutboxMessage")
+                        .WithOne("InboxMessage")
+                        .HasForeignKey("DigitalWallet.Data.InboxMessage", "OutboxId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("OutboxMessage");
+                });
+
             modelBuilder.Entity("DigitalWallet.Data.WalletTransaction", b =>
                 {
                     b.HasOne("DigitalWallet.Data.Wallet", "Wallet")
@@ -241,6 +307,11 @@ namespace DigitalWallet.Migrations
                         .IsRequired();
 
                     b.Navigation("Wallet");
+                });
+
+            modelBuilder.Entity("DigitalWallet.Data.OutboxMessage", b =>
+                {
+                    b.Navigation("InboxMessage");
                 });
 
             modelBuilder.Entity("DigitalWallet.Data.Wallet", b =>

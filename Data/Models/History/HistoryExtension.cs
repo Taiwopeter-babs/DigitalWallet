@@ -70,7 +70,9 @@ public static class HistoryExtension
                     EventType = eventDto.EventType,
                     UserId = eventDto.UserId,
                     TransactionId = eventDto.TransactionId,
-                    Timestamp = eventDto.Timestamp
+                    Timestamp = eventDto.Timestamp,
+                    WalletId = eventDto.WalletId, CorrelationId = eventDto.CorrelationId
+
                 }
             };
         }

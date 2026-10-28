@@ -13,15 +13,16 @@ public record TransactionEventDto
     public required string UserId { get; init; }
 
     [JsonPropertyName("transaction_id")]
-    public required int TransactionId { get; init; }
+    public int? TransactionId { get; init; }
 
     [JsonPropertyName("wallet_id")]
     public required int WalletId { get; init; }
 
     [JsonPropertyName("amount")]
-    public required decimal Amount { get; init; }
+    public decimal? Amount { get; init; }
 
     [JsonPropertyName("event_type")]
+    [JsonConverter(typeof(JsonStringEnumConverter))]
     public required EventType EventType { get; init; }
 
     [JsonPropertyName("event_data")]
@@ -37,13 +38,13 @@ public record CreateTransactionEventDto
     public required string UserId { get; init; }
 
     [JsonPropertyName("transaction_id")]
-    public required int TransactionId { get; init; }
+    public int? TransactionId { get; init; }
 
     [JsonPropertyName("wallet_id")]
     public required int WalletId { get; init; }
 
     [JsonPropertyName("amount")]
-    public required decimal Amount { get; init; }
+    public decimal? Amount { get; init; }
 
     [JsonPropertyName("event_type")]
     public required EventType EventType { get; init; }
@@ -57,16 +58,16 @@ public record WalletEventDto
 
     public required string UserId { get; init; }
 
-
-    public required int TransactionId { get; init; }
+    public int? TransactionId { get; init; }
 
 
     public required int WalletId { get; init; }
 
+    public decimal? Amount { get; init; }
 
-    public required decimal Amount { get; init; }
+    public Guid? CorrelationId { get; init; }
 
-
+    [JsonConverter(typeof(JsonStringEnumConverter))]
     public required EventType EventType { get; init; }
 
     [JsonConverter(typeof(IsoDateTimeConverter))]

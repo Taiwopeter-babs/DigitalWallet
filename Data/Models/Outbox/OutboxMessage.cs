@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace DigitalWallet.Data;
 
-[Table("outbox")]
+[Table("outbox_messages")]
 public class OutboxMessage : BaseModel
 {
     [Required]
@@ -21,6 +21,8 @@ public class OutboxMessage : BaseModel
 
     public DateTimeOffset? ProcessedAt { get; set; }
     public string? ErrorMessage { get; set; }
+
+    public InboxMessage? InboxMessage { get; set; }
 }
 
 [ComplexType]

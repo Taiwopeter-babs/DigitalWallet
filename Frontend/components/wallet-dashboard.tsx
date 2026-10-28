@@ -6,9 +6,10 @@ import { ActivityList } from "@/components/activity-list";
 import { OverviewPanel } from "@/components/overview-panel";
 import { Toast } from "@/components/toast";
 import { TransactionForms } from "@/components/transaction-forms";
+import { UserTransactionsList } from "@/components/user-transactions-list";
 import { WalletList } from "@/components/wallet-list";
 import { useWalletApi } from "@/hooks/use-wallet-api";
-import { type Activity, type Wallet, formatMoney } from "@/components/wallet-utils";
+import { type Wallet, formatMoney } from "@/components/wallet-utils";
 
 type Notice = {
   kind: "success" | "error";
@@ -74,44 +75,67 @@ function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : "The wallet request failed.";
 }
 
-function createActivity(walletId: number, type: Activity["type"], amountCents = 0, counterpartyId?: number): Activity {
-  return {
-    id: crypto.randomUUID(),
-    walletId,
-    type,
-    amountCents,
-    counterpartyId,
-    createdAt: new Date().toISOString(),
-  };
-}
-
 export function WalletDashboard() {
-  const userId = useSyncExternalStore(subscribeToUserId, getUserIdSnapshot, () => "");
+  // const userId = useSyncExternalStore(subscribeToUserId, getUserIdSnapshot, () => "");
+  const [userId, setUserId] = useState<string>("");
+
   const cannotPersistUserId = useSyncExternalStore(subscribeToUserId, getUserIdPersistenceWarning, () => false);
-  const [activity, setActivity] = useState<Activity[]>([]);
   const [notice, setNotice] = useState<Notice | null>(null);
   const [fundWalletId, setFundWalletId] = useState("");
   const [fundAmount, setFundAmount] = useState("");
   const [senderWalletId, setSenderWalletId] = useState("");
   const [receiverWalletId, setReceiverWalletId] = useState("");
   const [transferAmount, setTransferAmount] = useState("");
-  const { allWalletsQuery, createWallet, fundWallet, transfer, isValidUserId } = useWalletApi();
+  const [historySelection, setHistorySelection] = useState({
+    sourceUserId: "",
+    selectedUserId: "",
+    loadedUserId: "",
+  });
+  const [transactionsSelection, setTransactionsSelection] = useState({
+    sourceUserId: "",
+    selectedUserId: "",
+    loadedUserId: "",
+  });
+  const historySelectionIsStale = historySelection.sourceUserId !== userId;
+  const selectedHistoryUserId = historySelectionIsStale ? userId : historySelection.selectedUserId;
+  const historyUserId = historySelectionIsStale ? userId : historySelection.loadedUserId;
+  const transactionsSelectionIsStale = transactionsSelection.sourceUserId !== userId;
+  const selectedTransactionsUserId = transactionsSelectionIsStale ? userId : transactionsSelection.selectedUserId;
+  const transactionsUserId = transactionsSelectionIsStale ? userId : transactionsSelection.loadedUserId;
+  const {
+    allWalletsQuery,
+    userActivityQuery,
+    userTransactionsQuery,
+    createWallet,
+    fundWallet,
+    transfer,
+    isValidUserId,
+  } = useWalletApi(userId, historyUserId, transactionsUserId);
+
+  console.log(userActivityQuery.data, "user activity", userId);
 
   const wallets = allWalletsQuery.data ?? EMPTY_WALLETS;
+  const activity = userActivityQuery.data ?? [];
+  const transactions = userTransactionsQuery.data ?? [];
+  const availableHistoryUserIds = useMemo(
+    () =>
+      Array.from(new Set([userId, ...wallets.map((wallet) => wallet.userId), historyUserId].filter(Boolean))).sort(),
+    [historyUserId, userId, wallets],
+  );
 
   const walletsById = useMemo(() => [...wallets].sort((first, second) => first.id - second.id), [wallets]);
-  
+
   const totalBalance = useMemo(() => wallets.reduce((total, wallet) => total + wallet.balanceCents, 0), [wallets]);
-  
+
   const selectedFundWalletId = walletsById.some((wallet) => String(wallet.id) === fundWalletId)
     ? fundWalletId
     : String(walletsById[0]?.id ?? "");
-  
-    const selectedSenderWalletId = walletsById.some((wallet) => String(wallet.id) === senderWalletId)
+
+  const selectedSenderWalletId = walletsById.some((wallet) => String(wallet.id) === senderWalletId)
     ? senderWalletId
     : String(walletsById[0]?.id ?? "");
-  
-    const selectedReceiverWalletId = walletsById.some(
+
+  const selectedReceiverWalletId = walletsById.some(
     (wallet) => String(wallet.id) === receiverWalletId && receiverWalletId !== selectedSenderWalletId,
   )
     ? receiverWalletId
@@ -122,6 +146,28 @@ export function WalletDashboard() {
     const timeout = window.setTimeout(() => setNotice(null), 4500);
     return () => window.clearTimeout(timeout);
   }, [notice]);
+
+  function handleLoadHistory(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const normalizedUserId = selectedHistoryUserId.trim();
+    if (!isValidUserId(normalizedUserId)) return;
+    setHistorySelection({
+      sourceUserId: userId,
+      selectedUserId: normalizedUserId,
+      loadedUserId: normalizedUserId,
+    });
+  }
+
+  function handleLoadTransactions(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const normalizedUserId = selectedTransactionsUserId.trim();
+    if (!isValidUserId(normalizedUserId)) return;
+    setTransactionsSelection({
+      sourceUserId: userId,
+      selectedUserId: normalizedUserId,
+      loadedUserId: normalizedUserId,
+    });
+  }
 
   function showNotice(kind: Notice["kind"], message: string) {
     setNotice({ kind, message });
@@ -137,7 +183,6 @@ export function WalletDashboard() {
 
     try {
       const wallet = await createWallet.mutateAsync({ userId: normalizedUserId });
-      setActivity((current) => [createActivity(wallet.id, "created"), ...current]);
       showNotice("success", `Wallet #${wallet.id} is ready.`);
     } catch (error) {
       showNotice("error", errorMessage(error));
@@ -160,7 +205,6 @@ export function WalletDashboard() {
 
     try {
       await fundWallet.mutateAsync({ walletId, amount: amountCents / 100 });
-      setActivity((current) => [createActivity(walletId, "funded", amountCents), ...current]);
       setFundAmount("");
       showNotice("success", `${formatMoney(amountCents)} added to wallet #${walletId}.`);
     } catch (error) {
@@ -199,11 +243,6 @@ export function WalletDashboard() {
         receiverWalletId: receiverId,
         amount: amountCents / 100,
       });
-      setActivity((current) => [
-        createActivity(senderId, "transfer-out", amountCents, receiverId),
-        createActivity(receiverId, "transfer-in", amountCents, senderId),
-        ...current,
-      ]);
       setTransferAmount("");
       showNotice("success", `${formatMoney(amountCents)} sent to wallet #${receiverId}.`);
     } catch (error) {
@@ -218,6 +257,8 @@ export function WalletDashboard() {
       setReceiverWalletId(alternative ? String(alternative.id) : "");
     }
   }
+
+  console.log(userId, 'userId')
 
   return (
     <div className="app-shell">
@@ -288,7 +329,7 @@ export function WalletDashboard() {
         <OverviewPanel
           totalBalance={totalBalance}
           walletCount={wallets.length}
-          movementCount={activity.filter((entry) => entry.type !== "created").length}
+          movementCount={activity.filter((entry) => entry.eventType !== "wallet-created").length}
         />
 
         <section className="workspace-grid" aria-label="Manage wallets">
@@ -300,7 +341,44 @@ export function WalletDashboard() {
             ) : (
               <WalletList wallets={walletsById} />
             )}
-            <ActivityList wallets={wallets} activity={activity.slice(0, 6)} />
+            <ActivityList
+              activity={activity}
+              availableUserIds={availableHistoryUserIds}
+              selectedUserId={selectedHistoryUserId}
+              onSelectedUserIdChange={(value) => {
+                setUserId(value);
+                setHistorySelection({
+                  sourceUserId: userId,
+                  selectedUserId: value,
+                  loadedUserId: historyUserId,
+                });
+              }}
+              onLoadUser={handleLoadHistory}
+              isLoading={userActivityQuery.isPending}
+              isError={userActivityQuery.isError}
+              errorMessage={userActivityQuery.error ? errorMessage(userActivityQuery.error) : undefined}
+              isRefreshing={userActivityQuery.isFetching}
+              onRefresh={() => void userActivityQuery.refetch()}
+            />
+            <UserTransactionsList
+              transactions={transactions}
+              availableUserIds={availableHistoryUserIds}
+              selectedUserId={selectedTransactionsUserId}
+              onSelectedUserIdChange={(value) => {
+                setUserId(value);
+                setTransactionsSelection({
+                  sourceUserId: userId,
+                  selectedUserId: value,
+                  loadedUserId: transactionsUserId,
+                });
+              }}
+              onLoadUser={handleLoadTransactions}
+              isLoading={userTransactionsQuery.isPending}
+              isError={userTransactionsQuery.isError}
+              errorMessage={userTransactionsQuery.error ? errorMessage(userTransactionsQuery.error) : undefined}
+              isRefreshing={userTransactionsQuery.isFetching}
+              onRefresh={() => void userTransactionsQuery.refetch()}
+            />
           </div>
 
           <div className="actions-column">

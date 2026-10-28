@@ -1,11 +1,15 @@
-using System.Text.Json;
-using Confluent.Kafka;
 using DigitalWallet.Data;
 using DigitalWallet.Services.KafkaService.KafkaProducerService;
 using Microsoft.EntityFrameworkCore;
 
 
 namespace DigitalWallet.Services.EventService;
+
+public record OutboxUpdateFailureData
+{
+    public required OutboxMessage OutboxMessage { get; init; }
+    public required string ExceptionMessage { get; init; }
+}
 
 public class EventService : BackgroundService
 {
@@ -34,7 +38,7 @@ public class EventService : BackgroundService
                 Console.WriteLine(ex);
             }
 
-            // Poll interval (check outbox every 10 seconds)
+            // Poll interval (check outbox every 60 seconds)
             await Task.Delay(TimeSpan.FromSeconds(PollingInterval), stoppingToken);
         }
     }
@@ -47,45 +51,92 @@ public class EventService : BackgroundService
 
 
         var pendingMessages = await dbContext.OutboxMessages
-            .Where(m => !m.Processed)
+            .Where(m => m.Processed == false || m.InboxMessage == null || (m.InboxMessage != null && m.InboxMessage.Received == false))
+            .Include(om => om.InboxMessage)
             .OrderBy(m => m.CreatedAt)
             .Take(BatchSize)
+            .AsSplitQuery()
             .ToListAsync(cancellationToken);
 
-        if (!pendingMessages.Any()) return;
+        List<EventPublishPayload> eventsToPublish = [];
 
-        foreach (var outbox in pendingMessages)
-            try
+        Console.WriteLine("Count of pending: {0}", pendingMessages.Count);
+
+        if (pendingMessages.Count == 0) return;
+
+        var currentDatetime = DateTimeOffset.UtcNow;
+
+        await using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
+
+        try
+        {
+
+            foreach (var outbox in pendingMessages)
             {
-                var message = new Message<string, string>
+                try
                 {
-                    Key = outbox.Key,
-                    Value = outbox.Payload.ToString() ?? ""
-                };
+                    Console.WriteLine("Outbox Id and Inbox Received: {0} == {1}", outbox.Id, outbox.InboxMessage?.Received);
 
-                Console.WriteLine(message.Value);
+                    if (outbox.InboxMessage != null && outbox.InboxMessage.Received is true)
+                    {
+                        Console.WriteLine("Inbox is not null and received: {0}", outbox.Id);
+                        continue;
+                    }
 
 
-                var deliveryResult =
-                    await kafkaProducerService.PublishKafkaEvent(outbox.Topic, outbox.Key, message, cancellationToken);
+                    if (outbox.InboxMessage == null)
+                    {
+                        InboxMessage newInboxMessage = new()
+                        {
+                            Topic = outbox.Topic,
+                            Key = outbox.Key,
+                            CorrelationId = outbox.Payload.CorrelationId,
+                            OutboxId = outbox.Id
+                        };
 
-                if (deliveryResult is null) continue;
+                        dbContext.InboxMessages.Add(newInboxMessage);
+                    }
 
-                outbox.Processed = true;
-                outbox.ProcessedAt = DateTimeOffset.UtcNow;
-                outbox.ErrorMessage = null;
+                    outbox.Processed = true;
+                    outbox.ProcessedAt = currentDatetime;
 
-                Console.WriteLine(
-                    "Outbox message {0} successfully published to Kafka topic {1} at offset {2}", outbox.Id,
-                    outbox.Topic, deliveryResult.Offset);
+                    Console.WriteLine("Oubox success addition {0}", outbox.Id);
+
+                    eventsToPublish.Add(new EventPublishPayload
+                    {
+                        Topic = outbox.Topic,
+                        Key = outbox.Key,
+                        Payload = outbox.Payload
+                    });
+
+
+                }
+                catch (Exception ex)
+                {
+                    outbox.ErrorMessage = ex.Message;
+
+                    Console.WriteLine("Oubox error addition {0}", outbox.Id);
+
+                    continue;
+                }
             }
-            catch (Exception ex)
-            {
-                // Kafka is likely down. save the error and keep Processed = false to retry later
-                outbox.ErrorMessage = ex.Message;
-            }
 
-        await dbContext.SaveChangesAsync(cancellationToken);
+            await dbContext.SaveChangesAsync(cancellationToken);
+
+            await transaction.CommitAsync(cancellationToken);
+        }
+        catch (Exception)
+        {
+            await transaction.RollbackAsync(cancellationToken);
+
+            throw;
+        }
+
+        if (eventsToPublish.Count > 0)
+        {
+            await kafkaProducerService.PublishKafkaEvents(eventsToPublish, cancellationToken);
+
+        }
     }
 
     public override async Task StopAsync(CancellationToken stoppingToken)

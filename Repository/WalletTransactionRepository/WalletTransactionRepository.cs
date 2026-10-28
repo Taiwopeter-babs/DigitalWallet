@@ -23,4 +23,14 @@ public class WalletTransactionRepository : RepositoryBase<WalletTransaction>, IW
             .AsNoTracking()
             .ToListAsync(token);
     }
+
+    public async Task<List<WalletTransaction>> GetUserWalletTransactions(Guid userId, CancellationToken token)
+    {
+        var userIdText = userId.ToString();
+
+        return await _context.WalletTransactions
+            .Where(transaction => transaction.Wallet.UserId.Equals(userIdText))
+            .AsNoTracking()
+            .ToListAsync(token);
+    }
 }

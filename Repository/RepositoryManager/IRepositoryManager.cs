@@ -7,6 +7,9 @@ public interface IRepositoryManager
     IWalletTransactionRepository WalletTransaction { get; }
     IOutboxMessageRepository OutboxMessage { get; }
 
+    IInboxMessageRepository InboxMessage { get; }
+
+
     Task SaveAsync(CancellationToken token);
 
     public Task BeginTransactionAsync(CancellationToken token);

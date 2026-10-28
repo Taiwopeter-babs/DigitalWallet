@@ -33,6 +33,44 @@ export type ApiResponse<T> = {
   error: Record<string, string[]> | null;
 };
 
+export type UserActivity = {
+  id: number;
+  userId: string;
+  transactionId: number;
+  walletId: number;
+  amountCents: number;
+  eventType: "wallet-created" | "wallet-funded" | "transfer-completed" | "transfer-failed";
+  timestamp: string;
+};
+
+export type UserActivityApiDto = {
+  id: number;
+  user_id: string;
+  transaction_id: number;
+  wallet_id: number;
+  amount: number;
+  event_type: number | string;
+  timestamp: string;
+};
+
+export type WalletTransaction = {
+  id: number;
+  walletId: number;
+  amountCents: number;
+  status: "Completed" | "Failed";
+  type: "Fund" | "TransferOut" | "TransferIn";
+  timestamp: string;
+};
+
+export type WalletTransactionApiDto = {
+  id: number;
+  wallet_id: number;
+  amount: number;
+  status: string;
+  type: string;
+  timestamp: string;
+};
+
 const moneyFormat = new Intl.NumberFormat("en-US", {
   style: "currency",
   currency: "NGN",

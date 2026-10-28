@@ -8,7 +8,7 @@ namespace DigitalWallet.Data;
 public class Wallet : BaseModel
 {
     [Required]
-    public string UserId { get; init; }
+    public required string UserId { get; init; }
 
     [Required]
     public decimal Balance { get; set; }

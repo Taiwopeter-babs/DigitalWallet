@@ -23,6 +23,7 @@ public static class MapHistoryRoutes
                 .WithTags("User Wallets");
 
             userHistoryGroup.MapGet("/{id:Guid}/activity", GetUserActivity);
+            userHistoryGroup.MapGet("/{id:Guid}/transactions", GetUserWalletTransactions);
         }
     }
 
@@ -39,10 +40,23 @@ public static class MapHistoryRoutes
             : TypedResults.BadRequest(result.ToApiResponse());
     }
 
+    private static async Task<Results<Ok<ApiResponse<List<WalletTransactionDto>>>, BadRequest<ApiResponse<List<WalletTransactionDto>>>>>
+        GetUserWalletTransactions(
+            [FromRoute] Guid id,
+            [FromServices] IHistoryService historyService,
+            CancellationToken cancellationToken)
+    {
+        var result = await historyService.GetUserWalletTransactions(id, cancellationToken);
+
+        return result.IsSuccess
+            ? TypedResults.Ok(result.ToApiResponse())
+            : TypedResults.BadRequest(result.ToApiResponse());
+    }
+
 
     private static async Task<Results<Ok<ApiResponse<List<WalletTransactionDto>>>, BadRequest<ApiResponse<List<WalletTransactionDto>>>>> GetWalletHistory(
-        [FromServices] IHistoryService historyService,
         [FromRoute] int id,
+        [FromServices] IHistoryService historyService,
         CancellationToken cancellationToken)
     {
         var result = await historyService.GetWalletHistory(id, cancellationToken);

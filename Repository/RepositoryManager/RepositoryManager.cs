@@ -14,6 +14,7 @@ public sealed class RepositoryManager : IRepositoryManager
     private readonly Lazy<IHistoryRepository> _historyRepository;
     private readonly Lazy<IWalletTransactionRepository> _walletTransactionRepository;
     private readonly Lazy<IOutboxMessageRepository> _outboxMessageRepository;
+    private readonly Lazy<IInboxMessageRepository> _inboxMessageRepository;
 
 
     public RepositoryManager(DatabaseContext context)
@@ -24,6 +25,7 @@ public sealed class RepositoryManager : IRepositoryManager
         _walletTransactionRepository =
             new Lazy<IWalletTransactionRepository>(() => new WalletTransactionRepository(context));
         _outboxMessageRepository = new Lazy<IOutboxMessageRepository>(() => new OutboxMessageRepository(context));
+        _inboxMessageRepository = new Lazy<IInboxMessageRepository>(() => new InboxMessageRepository(context));
     }
 
 
@@ -31,6 +33,8 @@ public sealed class RepositoryManager : IRepositoryManager
     public IHistoryRepository History => _historyRepository.Value;
     public IWalletTransactionRepository WalletTransaction => _walletTransactionRepository.Value;
     public IOutboxMessageRepository OutboxMessage => _outboxMessageRepository.Value;
+    public IInboxMessageRepository InboxMessage => _inboxMessageRepository.Value;
+
 
 
     public async Task SaveAsync(CancellationToken token)

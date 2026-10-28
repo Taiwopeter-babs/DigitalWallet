@@ -21,6 +21,8 @@ public class WalletTransaction : BaseModel
     [Required]
     public int WalletId { get; set; }
 
+    public Guid? CorrelationId { get; set; }
+
     [JsonIgnore]
     public Wallet Wallet { get; set; } = null!;
 }

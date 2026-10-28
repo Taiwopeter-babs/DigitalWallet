@@ -9,7 +9,7 @@ public record WalletDto
     public int Id { get; init; }
 
     [JsonPropertyName("user_id")]
-    public string UserId { get; init; }
+    public required string UserId { get; init; }
 
     [JsonPropertyName("balance")]
     public decimal Balance { get; init; }
@@ -24,7 +24,7 @@ public record WalletDto
 public record CreateWalletDto
 {
     [JsonPropertyName("user_id")]
-    public string UserId { get; init; }
+    public required string UserId { get; init; }
 }
 
 public record FundWalletDto
@@ -81,4 +81,6 @@ public record CreateWalletTransactionDto
     public required TransactionStatus Status { get; init; }
 
     public required TransactionType Type { get; init; }
+
+    public Guid CorrelationId { get; init; }
 }

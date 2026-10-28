@@ -1,31 +1,97 @@
-import { ArrowDownLeft, ArrowUpRight, Clock3, Plus } from "lucide-react";
-import { activityDescription, formatMoney, type Activity, type Wallet } from "@/components/wallet-utils";
+import { Activity as ActivityIcon, ArrowDownLeft, ArrowUpRight, Clock3, Plus, RefreshCw } from "lucide-react";
+import type { FormEvent } from "react";
+import { formatMoney, type UserActivity } from "@/components/wallet-utils";
 
 type ActivityListProps = {
-  wallets: Wallet[];
-  activity: Activity[];
+  activity: UserActivity[];
+  availableUserIds: string[];
+  selectedUserId: string;
+  onSelectedUserIdChange: (value: string) => void;
+  onLoadUser: (event: FormEvent<HTMLFormElement>) => void;
+  isLoading: boolean;
+  isError: boolean;
+  errorMessage?: string;
+  isRefreshing: boolean;
+  onRefresh: () => void;
 };
 
-export function ActivityList({ wallets, activity }: ActivityListProps) {
+function activityDescription(eventType: UserActivity["eventType"]): string {
+  switch (eventType) {
+    case "wallet-created":
+      return "Wallet created";
+    case "wallet-funded":
+      return "Funds added";
+    case "transfer-completed":
+      return "Transfer completed";
+    case "transfer-failed":
+      return "Transfer failed";
+  }
+}
+
+export function ActivityList({
+  activity,
+  availableUserIds,
+  selectedUserId,
+  onSelectedUserIdChange,
+  onLoadUser,
+  isLoading,
+  isError,
+  errorMessage,
+  isRefreshing,
+  onRefresh,
+}: ActivityListProps) {
   return (
     <section className="panel activity-panel">
       <div className="section-heading">
         <div>
-          <p className="eyebrow">THE LATEST</p>
-          <h2>Recent activity</h2>
+          <p className="eyebrow">USER HISTORY</p>
+          <h2>All user activity</h2>
         </div>
-        <span className="activity-live"><span className="green-indicator" /> Updates instantly</span>
+        <button className="activity-refresh" type="button" onClick={onRefresh} disabled={isRefreshing}>
+          <RefreshCw size={14} className={isRefreshing ? "spinning" : ""} /> Refresh
+        </button>
       </div>
 
-      {activity.length ? (
+      <form className="history-user-picker" onSubmit={onLoadUser}>
+        <label htmlFor="history-user-id">Select a user ID</label>
+        <div className="history-user-controls">
+          <select
+            id="history-user-id"
+            onChange={(event) => onSelectedUserIdChange(event.target.value)}
+            value={selectedUserId}
+            disabled={!availableUserIds.length}
+          >
+            {availableUserIds.length ? (
+              availableUserIds.map((userId) => (
+                <option key={userId} value={userId}>{userId}</option>
+              ))
+            ) : (
+              <option value="">No user IDs available</option>
+            )}
+          </select>
+          <button className="secondary-button" type="submit" disabled={!selectedUserId}>
+            Load user events
+          </button>
+        </div>
+      </form>
+
+      {isLoading ? (
+        <div className="empty-state compact-empty" aria-live="polite">Loading user activity…</div>
+      ) : isError ? (
+        <div className="activity-error" role="alert">
+          <ActivityIcon size={18} />
+          <span>{errorMessage ?? "Could not load activity."}</span>
+        </div>
+      ) : activity.length ? (
         <div className="activity-list">
           {activity.map((entry) => {
-            const isIncoming = entry.type === "funded" || entry.type === "transfer-in";
-            const isCreation = entry.type === "created";
+            const isIncoming = entry.eventType === "wallet-funded";
+            const isCreation = entry.eventType === "wallet-created";
+            const isFailed = entry.eventType === "transfer-failed";
             const icon =
-              entry.type === "funded" || entry.type === "transfer-in"
+              entry.eventType === "wallet-funded"
                 ? <ArrowDownLeft size={17} />
-                : entry.type === "transfer-out"
+                : entry.eventType === "transfer-completed" || isFailed
                   ? <ArrowUpRight size={17} />
                   : <Plus size={17} />;
 
@@ -35,19 +101,21 @@ export function ActivityList({ wallets, activity }: ActivityListProps) {
                   {icon}
                 </div>
                 <div className="activity-details">
-                  <strong>{activityDescription(entry, wallets)}</strong>
+                  <strong>{activityDescription(entry.eventType)}</strong>
                   <span>
                     Wallet #{entry.walletId} <span className="detail-dot">·</span>{" "}
-                    {new Date(entry.createdAt).toLocaleString([], {
+                    {new Date(entry.timestamp).toLocaleString([], {
                       month: "short",
                       day: "numeric",
                       hour: "numeric",
                       minute: "2-digit",
                     })}
+                    <span className="detail-dot"> · </span>
+                    Transaction #{entry.transactionId}
                   </span>
                 </div>
-                <span className={`activity-amount ${isCreation ? "amount-muted" : isIncoming ? "amount-positive" : ""}`}>
-                  {isCreation ? "—" : `${isIncoming ? "+" : "−"}${formatMoney(entry.amountCents)}`}
+                <span className={`activity-amount ${isCreation ? "amount-muted" : isIncoming ? "amount-positive" : isFailed ? "amount-failed" : ""}`}>
+                  {isCreation ? "—" : `${isIncoming ? "+" : isFailed ? "" : "−"}${formatMoney(entry.amountCents)}`}
                 </span>
               </div>
             );
@@ -56,8 +124,8 @@ export function ActivityList({ wallets, activity }: ActivityListProps) {
       ) : (
         <div className="empty-state compact-empty">
           <div className="empty-icon"><Clock3 size={21} /></div>
-          <strong>Nothing to see yet</strong>
-          <span>Your wallet activity will show up here.</span>
+          <strong>No user activity yet</strong>
+          <span>Wallet events from the API will appear here.</span>
         </div>
       )}
     </section>

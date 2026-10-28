@@ -1,6 +1,4 @@
-using System.Linq.Expressions;
 using DigitalWallet.Data;
-using DigitalWallet.Errors;
 using Microsoft.EntityFrameworkCore;
 
 namespace DigitalWallet.Repository;
@@ -23,7 +21,7 @@ public class HistoryRepository : RepositoryBase<TransactionEvent>, IHistoryRepos
     public async Task<List<TransactionEvent>> GetUserActivity(Guid userId, CancellationToken token)
     {
         return await _context.TransactionEvents
-            .Where(w => w.UserId.Equals(userId))
+            .Where(te => te.UserId == userId.ToString())
             .AsNoTracking()
             .ToListAsync(token);
     }
@@ -39,13 +37,5 @@ public class HistoryRepository : RepositoryBase<TransactionEvent>, IHistoryRepos
     public void SaveTransactionEvent(TransactionEvent transactionEvent, CancellationToken token)
     {
         Create(transactionEvent);
-    }
-
-    public async Task<List<TransactionEvent>> GetUserActivity(string userId, CancellationToken token)
-    {
-        return await _context.TransactionEvents
-            .Where(te => te.UserId.Equals(userId))
-            .AsNoTracking()
-            .ToListAsync(token);
     }
 }

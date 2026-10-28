@@ -1,10 +1,18 @@
 using System.Text;
 using System.Text.Json;
 using Confluent.Kafka;
+using DigitalWallet.Data;
 using DigitalWallet.Storage;
 using Microsoft.Extensions.Options;
 
 namespace DigitalWallet.Services.KafkaService.KafkaProducerService;
+
+public record EventPublishPayload
+{
+    public required string Topic { get; init; }
+    public required string Key { get; init; }
+    public required OutboxMessagePayload Payload { get; init; }
+}
 
 public class KafkaProducerService : IKafkaProducerService
 {
@@ -32,9 +40,35 @@ public class KafkaProducerService : IKafkaProducerService
         }
         catch (ProduceException<string, string> ex)
         {
-            // Handle exceptions with logs and dead letter queue, and if kafka fails fully, use an outbox
             Console.WriteLine(ex.Message);
-            return null;
+            throw;
+        }
+    }
+
+    public async Task<DeliveryResult<string, string>?[]> PublishKafkaEvents(List<EventPublishPayload> eventsToPublish, CancellationToken token)
+    {
+        List<Task<DeliveryResult<string, string>>> payloadsToPublish = [];
+
+        try
+        {
+            foreach (EventPublishPayload payload in eventsToPublish)
+            {
+                var message = new Message<string, string>
+                {
+                    Key = payload.Key,
+                    Value = JsonSerializer.Serialize(payload.Payload)
+                };
+
+                payloadsToPublish.Add(_kafkaProducer.ProduceAsync(payload.Topic, message, token));
+            }
+
+
+            return await Task.WhenAll(payloadsToPublish);
+        }
+        catch (ProduceException<string, string> ex)
+        {
+            Console.WriteLine(ex.Message);
+            throw;
         }
     }
 
@@ -43,7 +77,6 @@ public class KafkaProducerService : IKafkaProducerService
        Exception ex,
        CancellationToken cancellationToken)
     {
-        Console.WriteLine(ex.Message);
         try
         {
             failedResult.Message.Headers ??= [];

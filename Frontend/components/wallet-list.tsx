@@ -13,7 +13,7 @@ export function WalletList({ wallets }: WalletListProps) {
           <p className="eyebrow">YOUR MONEY</p>
           <h2>Your wallets <span className="count-pill">{wallets.length}</span></h2>
         </div>
-        <span className="subtle-label">Balances in USD</span>
+        <span className="subtle-label">Balances in NGN</span>
       </div>
 
       {wallets.length ? (

@@ -41,6 +41,18 @@ public class HistoryService : IHistoryService
         }, cancellationToken);
     }
 
+    public async Task<Result<List<WalletTransactionDto>>> GetUserWalletTransactions(Guid userId,
+        CancellationToken cancellationToken)
+    {
+        return await Result.TryAsync(_repo, async (repo, token) =>
+        {
+            var transactions = await repo.WalletTransaction.GetUserWalletTransactions(userId, token);
+            var transactionsDto = transactions.Select(transaction => transaction.ToWalletTransactionDto()).ToList();
+
+            return Result.Success(transactionsDto);
+        }, cancellationToken);
+    }
+
     public async Task<Result<TransactionEventDto>> SaveTransactionEvent(CreateTransactionEventDto transactionEventDto,
         CancellationToken cancellationToken)
     {

@@ -15,13 +15,21 @@ public class IsoDateTimeConverter : JsonConverter<DateTimeOffset>
 
         string? rawString = reader.GetString();
         Console.WriteLine("Deserializing {0}", rawString);
-        return DateTimeOffset.Parse(rawString!);
+
+
+        var parsed = DateTimeOffset.TryParse(rawString!, out DateTimeOffset parsedValue);
+
+        Console.WriteLine("This is the parsed value, {0}", parsedValue);
+
+        if (!parsed) throw new Exception("Could not parse DateTimeOffset");
+
+        return parsedValue;
     }
 
     public override void Write(Utf8JsonWriter writer, DateTimeOffset value, JsonSerializerOptions options)
     {
         Console.WriteLine("Serializing {0}", value.ToString("o"));
 
-        writer.WriteStringValue(value.ToString("o", CultureInfo.InvariantCulture));
+        writer.WriteStringValue(value.ToString("o"));
     }
 }

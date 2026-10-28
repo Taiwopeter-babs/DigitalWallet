@@ -52,7 +52,8 @@ public static class WalletExtension
                 Amount = walletTransactionDto.Amount,
                 Type = walletTransactionDto.Type,
                 Status = walletTransactionDto.Status,
-                WalletId = walletTransactionDto.WalletId
+                WalletId = walletTransactionDto.WalletId,
+                CorrelationId = walletTransactionDto.CorrelationId
             };
         }
     }

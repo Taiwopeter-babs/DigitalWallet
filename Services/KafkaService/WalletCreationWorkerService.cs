@@ -4,6 +4,7 @@ using DigitalWallet.Storage;
 using DigitalWallet.Data;
 using Microsoft.Extensions.Options;
 using DigitalWallet.Services.KafkaService.KafkaProducerService;
+using DigitalWallet.Services.KafkaService.WalletWorkerService;
 
 namespace DigitalWallet.Services.KafkaService;
 
@@ -37,16 +38,21 @@ public class WalletCreationWorkerService : BackgroundService
                 try
                 {
                     var historyService = scope.ServiceProvider.GetRequiredService<IHistoryService>();
+                    var walletWorkerService = scope.ServiceProvider.GetRequiredService<IWalletWorkerService>();
+
 
                     var walletCreationEvent = JsonSerializer.Deserialize<WalletEventDto>(result.Message.Value);
 
                     if (walletCreationEvent == null)
                         continue;
 
-                    await historyService.SaveTransactionEvent(walletCreationEvent.ToCreateTransactionEventDto(),
-                        stoppingToken);
+                    var transactionEventResult = await walletWorkerService
+                        .SaveTransactionAndInboxData(walletCreationEvent.ToCreateTransactionEventDto(), stoppingToken);
 
-                    consumer.Commit(result);
+                    if (transactionEventResult)
+                    {
+                        consumer.Commit(result);
+                    }
 
                 }
                 catch (Exception ex)
