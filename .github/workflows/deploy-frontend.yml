@@ -1,0 +1,75 @@
+name: Deploy frontend
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "Frontend/**"
+      - ".github/workflows/deploy-frontend.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-frontend
+  cancel-in-progress: false
+
+env:
+  TF_CLOUD_ORGANIZATION: "YOUR-ORGANIZATION-HERE"
+  TF_API_TOKEN: "${{ secrets.TF_API_TOKEN }}"
+  TF_WORKSPACE: "learn-terraform-github-actions"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: Frontend/infrastructure
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push frontend image
+        uses: docker/build-push-action@v6
+        with:
+          context: Frontend
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/frontend-wallet:${{ github.sha }}
+
+      # - name: Log in to Azure
+      #   uses: azure/login@v1
+      #   with:
+      #     creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      # - name: Set up Terraform
+      #   uses: hashicorp/setup-terraform@v3
+      #   with:
+      #     cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+
+      # - name: Initialize Terraform
+      #   run: terraform init -input=false
+
+      # - name: Terraform plan
+      #   run: terraform plan -input=false
+
+      # - name: Deploy to Azure
+      #   env:
+      #     TF_VAR_azure_subscription_id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      #     TF_VAR_azure_dockerhub_token: ${{ secrets.DOCKERHUB_TOKEN }}
+      #     TF_VAR_dockerhub_username: ${{ secrets.DOCKERHUB_USERNAME }}
+      #     TF_VAR_image: ${{ secrets.DOCKERHUB_USERNAME }}/frontend-wallet:${{ github.sha }}
+      #   run: terraform apply -input=false -auto-approve
+
+      # - name: Publish deployment URL
+      #   run: echo "Frontend deployed to https://$(terraform output -raw app_url)" >> "$GITHUB_STEP_SUMMARY"

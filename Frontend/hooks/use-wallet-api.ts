@@ -11,7 +11,9 @@ import type {
   WalletTransactionApiDto,
 } from "@/components/wallet-utils";
 
-const API_BASE_URL = (process.env.NEXT_PUBLIC_WALLET_API_URL ?? "http://localhost:5001").replace(/\/$/, "");
+// const API_BASE_URL = (process.env.NEXT_PUBLIC_WALLET_API_URL ?? "http://localhost:5001").replace(/\/$/, "");
+
+const API_BASE_URL = "/digital-wallet-api";
 
 type CreateWalletInput = {
   userId: string;
@@ -165,7 +167,7 @@ export function useWalletApi(userId: string, historyUserId = userId, transaction
       return data.map(walletFromDto);
     },
   });
-  console.log(userId)
+  console.log(userId);
 
   const userActivityQuery = useQuery({
     queryKey: ["user-activity", historyUserId],
