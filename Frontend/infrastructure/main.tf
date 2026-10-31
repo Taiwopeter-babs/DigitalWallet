@@ -74,7 +74,7 @@ resource "azurerm_key_vault" "kv" {
 
 resource "azurerm_key_vault_secret" "api_url_secret" {
   name         = "digital-wallet-api-url"
-  value        = "https://yourdomain.com" # Replace with your real API endpoint
+  value        = "https://yourdomain.com"
   key_vault_id = azurerm_key_vault.kv.id
 }
 
